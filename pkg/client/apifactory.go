@@ -79,14 +79,15 @@ type APIFactory struct {
 	lock     *locking.RWMutex
 }
 
-func NewAPIFactory(scheduler api.SchedulerAPI, informerFactory informers.SharedInformerFactory, configs *conf.SchedulerConf, testMode bool) *APIFactory {
+func NewAPIFactory(scheduler api.SchedulerAPI, informerFactory, schedulerScopedInformerFactory informers.SharedInformerFactory, configs *conf.SchedulerConf, testMode bool) *APIFactory {
 	kubeClient := NewKubeClient(configs.KubeConfig)
 
 	// init informers
 	// volume informers are also used to get the Listers for the predicates
 	nodeInformer := informerFactory.Core().V1().Nodes()
 	podInformer := informerFactory.Core().V1().Pods()
-	configMapInformer := informerFactory.Core().V1().ConfigMaps()
+	// configmap only needs to watch on own namespaced scope for efficiency
+	configMapInformer := schedulerScopedInformerFactory.Core().V1().ConfigMaps()
 	storageInformer := informerFactory.Storage().V1().StorageClasses()
 	csiNodeInformer := informerFactory.Storage().V1().CSINodes()
 	pvInformer := informerFactory.Core().V1().PersistentVolumes()

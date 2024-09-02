@@ -63,15 +63,16 @@ func NewShimScheduler(scheduler api.SchedulerAPI, configs *conf.SchedulerConf, b
 
 	// we have disabled re-sync to keep ourselves up-to-date
 	informerFactory := informers.NewSharedInformerFactory(kubeClient.GetClientSet(), 0)
+	schedulerScopedInformerFactory := informers.NewSharedInformerFactoryWithOptions(kubeClient.GetClientSet(), 0, informers.WithNamespace(configs.Namespace))
 
-	apiFactory := client.NewAPIFactory(scheduler, informerFactory, configs, false)
+	apiFactory := client.NewAPIFactory(scheduler, informerFactory, schedulerScopedInformerFactory, configs, false)
 	context := cache.NewContextWithBootstrapConfigMaps(apiFactory, bootstrapConfigMaps)
 	rmCallback := cache.NewAsyncRMCallback(context)
 	return newShimSchedulerInternal(context, apiFactory, rmCallback)
 }
 
-func NewShimSchedulerForPlugin(scheduler api.SchedulerAPI, informerFactory informers.SharedInformerFactory, configs *conf.SchedulerConf, bootstrapConfigMaps []*v1.ConfigMap) *KubernetesShim {
-	apiFactory := client.NewAPIFactory(scheduler, informerFactory, configs, false)
+func NewShimSchedulerForPlugin(scheduler api.SchedulerAPI, informerFactory, schedulerScopedInformerFactory informers.SharedInformerFactory, configs *conf.SchedulerConf, bootstrapConfigMaps []*v1.ConfigMap) *KubernetesShim {
+	apiFactory := client.NewAPIFactory(scheduler, informerFactory, schedulerScopedInformerFactory, configs, false)
 	context := cache.NewContextWithBootstrapConfigMaps(apiFactory, bootstrapConfigMaps)
 	utils.SetPluginMode(true)
 	rmCallback := cache.NewAsyncRMCallback(context)
